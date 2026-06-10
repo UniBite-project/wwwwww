@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniBite</title>
+    <link rel="icon" type="image/png" href="logotransparent.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+    <div class="logo">
+        <img src="logo.jpeg" alt="UniBite Logo">
+    </div>
+    <div class="top-right">
+        <div class="lang-dropdown" id="langDropdown">
+            <div class="selected">
+                <span>Ελληνικά</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="options">
+                <div class="option" data-lang="el">Ελληνικά</div>
+                <div class="option" data-lang="en">English</div>
+            </div>
+        </div>
+        <a href="register.html" class="nav-active">Εγγραφή</a>
+        <a href="login.html" class="btn-outline">Σύνδεση</a>
+    </div>
+</header>
+
+<div class="container">
+    <div class="login-card register-card">
+        <h1>Δημιουργία νέου λογαριασμού</h1>
+        <p class="subtitle">Γίνε και ΕΣΥ μέλος του UniBite! Ανακάλυψε και δοκίμασε νόστιμα και διάφορα γεύματα από συμφοιτητές σου. Μην χάνεις την ευκαιρία! Μπες και εγγράψου ΤΩΡΑ!</p>
+
+        <form id="registerForm" novalidate>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Όνομα</label>
+                    <div class="input-wrapper">
+                        <i class="fa fa-user"></i>
+                        <input type="text" id="firstname" placeholder="Χρήστος" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Επώνυμο</label>
+                    <div class="input-wrapper">
+                        <i class="fa fa-user"></i>
+                        <input type="text" id="lastname" placeholder="Ντρέλιας" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Email</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-envelope"></i>
+                    <input type="email" id="email" placeholder="up1112136@ac.upatras.gr" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Αριθμός Μητρώου (ΑΜ)</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-id-card"></i>
+                    <input type="text" id="studentId" placeholder="π.χ. 1112136" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Όνομα χρήστη</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-user-circle"></i>
+                    <input type="text" id="username" placeholder="xristosdrelias" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Συνθηματικό</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-key"></i>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                    <i class="fa fa-eye toggle-pass" id="togglePassword"></i>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Επιβεβαίωση Συνθηματικού</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-key"></i>
+                    <input type="password" id="confirmPassword" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="registerBtn">Δημιουργία Λογαριασμού</button>
+            <div class="error-message" id="errorMessage"></div>
+        </form>
+
+        <div class="terms">
+            Με την εγγραφή σου αποδέχεσαι τους <a href="#">Όρους Χρήσης</a> και την <a href="#">Πολιτική Απορρήτου</a>.
+        </div>
+
+        <div class="register-link">
+            Έχεις ήδη λογαριασμό; <a href="login.html">Συνδέσου εδώ</a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Language dropdown (ίδιο με το script.js)
+    const langDropdown = document.getElementById('langDropdown');
+    if (langDropdown) {
+        langDropdown.addEventListener('click', function(e) {
+            this.classList.toggle('open');
+            e.stopPropagation();
+        });
+        document.addEventListener('click', function(event) {
+            if (!langDropdown.contains(event.target)) langDropdown.classList.remove('open');
+        });
+    }
+
+    // Password toggle
+    const togglePass = document.getElementById('togglePassword');
+    const passInput = document.getElementById('password');
+    if (togglePass && passInput) {
+        togglePass.addEventListener('click', function() {
+            const type = passInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passInput.setAttribute('type', type);
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+    }
+
+    // Register form
+    const form = document.getElementById('registerForm');
+    const errorDiv = document.getElementById('errorMessage');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorDiv.style.display = 'none';
+
+        const password = document.getElementById('password').value;
+        const confirm = document.getElementById('confirmPassword').value;
+
+        if (password !== confirm) {
+            errorDiv.textContent = 'Τα συνθηματικά δεν ταιριάζουν.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        if (password.length < 4) {
+            errorDiv.textContent = 'Το συνθηματικό πρέπει να έχει τουλάχιστον 4 χαρακτήρες.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        const payload = {
+            firstname: document.getElementById('firstname').value,
+            lastname: document.getElementById('lastname').value,
+            email: document.getElementById('email').value,
+            studentId: document.getElementById('studentId').value,
+            username: document.getElementById('username').value,
+            password: password
+        };
+
+        const btn = document.getElementById('registerBtn');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Γίνεται εγγραφή...';
+
+        try {
+            const response = await fetch('api/register.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) throw new Error(data.message || 'Σφάλμα εγγραφής');
+            alert('Επιτυχής εγγραφή! Μπορείς πλέον να συνδεθείς.');
+            window.location.href = 'login.html';
+        } catch (err) {
+            errorDiv.textContent = err.message;
+            errorDiv.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    });
+});
+</script>
+</body>
+</html>

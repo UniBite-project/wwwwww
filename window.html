@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>UniBite - Πλατφόρμα</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="s.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="window.js"></script>
+    <style>
+        /* ===== CONSUMER PAGE – 3-PANEL LAYOUT ===== */
+        .consumer-page-wrapper {
+            width: 100%;
+            max-width: 1300px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            padding: 10px 0 40px 0;
+        }
+        .consumer-top-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .consumer-panel {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
+        .consumer-panel--full { width: 100%; }
+        .consumer-panel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+        .consumer-panel-header h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .consumer-panel-header--active   { border-left: 4px solid #16a34a; }
+        .consumer-panel-header--exhausted { border-left: 4px solid #94a3b8; }
+        .consumer-panel-header--map      { border-left: 4px solid #800020; }
+        .consumer-panel-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%; flex-shrink: 0;
+        }
+        .consumer-panel-dot--active    { background: #16a34a; }
+        .consumer-panel-dot--exhausted { background: #94a3b8; }
+        .consumer-panel-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 460px;
+            overflow-y: auto;
+        }
+        .consumer-listing-card {
+            display: flex;
+            gap: 0;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .consumer-listing-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.07);
+        }
+        .consumer-listing-card.exhausted { opacity: 0.65; filter: grayscale(35%); }
+        .consumer-listing-card img {
+            width: 88px; height: 88px;
+            object-fit: cover; flex-shrink: 0;
+        }
+        .consumer-listing-info {
+            padding: 10px 14px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .consumer-listing-info h4 {
+            margin: 0 0 4px 0;
+            font-size: 14px; font-weight: 700; color: #1e293b;
+        }
+        .consumer-listing-info p {
+            margin: 0; font-size: 12px;
+            color: #64748b; line-height: 1.5;
+        }
+        .consumer-listing-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px; gap: 8px;
+        }
+        .consumer-portions-badge {
+            font-size: 11px; font-weight: 700;
+            padding: 3px 9px; border-radius: 20px;
+        }
+        .consumer-portions-badge.active-badge   { background: #dcfce7; color: #16a34a; }
+        .consumer-portions-badge.exhausted-badge { background: #f1f5f9; color: #94a3b8; }
+        .consumer-reserve-btn {
+            background: #800020; color: white;
+            border: none; padding: 5px 14px;
+            border-radius: 8px; font-size: 12px;
+            font-weight: 600; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .consumer-reserve-btn:hover:not(:disabled) { background: #600018; }
+        .consumer-reserve-btn:disabled {
+            background: #e2e8f0; color: #94a3b8; cursor: not-allowed;
+        }
+        .consumer-empty {
+            text-align: center; padding: 30px 20px; color: #94a3b8;
+        }
+        .consumer-empty .empty-emoji { font-size: 32px; margin-bottom: 8px; }
+        @media (max-width: 768px) {
+            .consumer-top-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="academic-top-bar">
+            <div class="window-logo">
+                <img src="logo.jpeg" alt="UniBite Logo" class="window-top-logo">
+            </div>
+            <div class="top-nav-menu">
+                <span class="top-nav-item active" data-page="home" data-key="menu_home">Αρχική</span>
+                <span class="top-nav-item" data-page="faq" data-key="menu_faq">Συχνές Ερωτήσεις</span>
+                <span class="top-nav-item" data-page="settings" data-key="menu_settings">Ρυθμίσεις</span>
+            </div>
+            <div class="top-bar-right">
+                <div class="navbar-right-controls">
+                </div>
+            </div>
+        </div>
+
+        <button class="menu-btn" id="hamburgerBtn">
+            <span class="menu-icon">☰</span>
+        </button>
+
+        <div class="sidebar" id="sidebarMenu">   
+            <div class="menu-item" data-page="consumer">
+                <span class="menu-icon-item"></span>
+                <span class="menu-text" data-key="menu_consumer_reserve">Όλες οι Αγγελίες</span>
+            </div>         
+            <div class="menu-item" data-page="myorders">
+                <span class="menu-icon-item"></span>
+                <span class="menu-text" data-key="menu_orders">Οι Παραγγελίες μου</span>
+            </div>
+            <div class="menu-item" data-page="cook">
+                <span class="menu-icon-item"></span>
+                <span class="menu-text" data-key="menu_chef">Δημιούργησε Αγγελία</span>
+            </div>
+            <div class="menu-item" data-page="bonus">
+                <span class="menu-icon-item"></span>
+                <span class="menu-text" data-key="menu_bonus">Πόντοι & Επιβραβεύσεις</span>
+            </div>
+            <div class="menu-item" data-page="account">
+                <span class="menu-icon-item"></span>
+                <span class="menu-text" data-key="menu_account">Ο Λογαριασμός μου</span>
+            </div>
+            <div class="menu-item" data-page="admin" id="sidebarAdminLink" style="display:none;">
+                <span class="menu-icon-item"></span>
+                <span class="menu-text" data-key="menu_admin">Admin Dashboard</span>
+            </div>
+            
+            <div id="adminDashboardSection" style="display: none;">
+                <div class="admin-stats-grid">
+                    <div class="admin-stat-card">
+                        <div class="stat-icon"></div>
+                        <div class="stat-info">
+                            <h3 id="adminTotalSharesMonth">0</h3>
+                            <p>Μερίδες (Τελευταίος Μήνας)</p>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="stat-icon"></div>
+                        <div class="stat-info">
+                            <h3 id="adminTopDonorName">-</h3>
+                            <p>Top Donor Φοιτητής</p>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="stat-icon"></div>
+                        <div class="stat-info">
+                            <h3 id="adminTopRating">-</h3>
+                            <p>Καλύτερη Αξιολόγηση</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-tables-layout">
+                    <div class="admin-table-box">
+                        <div class="table-header-zone">
+                            <h3>Κατάταξη Φοιτητών (Leaderboard)</h3>
+                        </div>
+                        <table class="admin-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Θέση</th>
+                                    <th>Φοιτητής</th>
+                                    <th>Μερίδες που Προσέφερε</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminLeaderboardBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="admin-table-box">
+                        <div class="table-header-zone">
+                            <h3>Γεύματα με Υψηλότερη Αξιολόγηση</h3>
+                        </div>
+                        <table class="admin-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Φαγητό</th>
+                                    <th>Μάγειρας</th>
+                                    <th>Βαθμολογία</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminTopMealsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="admin-table-box full-width-table">
+                    <div class="table-header-zone">
+                        <h3>Κατάσταση Όλων των Αγγελιών στη ΒΔ (Ιστορικό & Στατιστικά)</h3>
+                    </div>
+                    <table class="admin-data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Τίτλος Γεύματος</th>
+                                <th>Μάγειρας</th>
+                                <th>Ημ. Δημιουργίας</th>
+                                <th>Κατάσταση</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminAllAdsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="overlay" id="overlay"></div>
+
+        <div class="page-content" id="mainContent">
+            
+            <div class="welcome-message" id="welcomeMsg" data-key="welcome_prefix">Καλώς ήρθες,</div>
+            <div class="sub-message" id="subMessage" data-key="sub_message"></div>
+            
+            <div id="page-home" class="app-page">
+                <div class="hero-section" id="unibiteIntroSection">
+                    <div class="hero-content">
+                        <div class="hero-text">
+                            <h1 class="hero-title">Αυτό είναι το <span class="unibite-highlight">UNIBITE</span>!</h1>
+                            <p class="hero-description">Καλώς ορίσατε στην πλατφόρμα ανταλλαγής σπιτικού φαγητού της πανεπιστημιακής μας κοινότητας. Εδώ μπορείτε να μοιραστείτε ή να βρείτε γευστικά, σπιτικά γεύματα εύκολα και γρήγορα!</p>
+                            
+                            <div class="instructions-list">
+                                <div class="instruction-item">
+                                    <div class="instruction-bullet">1</div>
+                                    <div class="instruction-content">
+                                        <h3>Περιήγηση</h3>
+                                        <p>Πλοηγηθείτε στο μενού από την αριστερή πλευρά της οθόνης σας.</p>
+                                    </div>
+                                </div>
+                                <div class="instruction-item">
+                                    <div class="instruction-bullet">2</div>
+                                    <div class="instruction-content">
+                                        <h3>Αναζήτηση</h3>
+                                        <p>Επιλέξτε "Όλες οι Αγγελίες" για να βρείτε διαθέσιμα φαγητά γύρω σας.</p>
+                                    </div>
+                                </div>
+                                <div class="instruction-item">
+                                    <div class="instruction-bullet">3</div>
+                                    <div class="instruction-content">
+                                        <h3>Δημιουργία</h3>
+                                        <p>Επιλέξτε "Δημιούργησε Αγγελία" για να προσφέρετε φαγητό σε άλλους φοιτητές.</p>
+                                    </div>
+                                </div>
+                                <div class="instruction-item">
+                                    <div class="instruction-bullet">4</div>
+                                    <div class="instruction-content">
+                                        <h3>Παρακολούθηση</h3>
+                                        <p>Δείτε τις κρατήσεις σας στο "Οι Παραγγελίες μου" και μαζέψτε πόντους!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hero-image">
+                            <img src="foitites.png" alt="Φοιτητές UniBite" class="hero-img">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-consumer" class="app-page" style="display: none;">
+    <div class="consumer-page-wrapper">
+
+        <!-- Πάνω σειρά: 2 πλαίσια δίπλα-δίπλα -->
+        <div class="consumer-top-row">
+
+            <!-- Αριστερό πλαίσιο: Ενεργές αγγελίες -->
+            <div class="consumer-panel consumer-panel--glass">
+                <div class="consumer-panel-header consumer-panel-header--active">
+                    <span class="consumer-panel-dot consumer-panel-dot--active"></span>
+                    <h3>🟢 Ενεργές Αγγελίες</h3>
+                    <span class="consumer-count-badge" id="activeCount">0</span>
+                </div>
+                <div class="consumer-panel-body" id="activeListingsContainer">
+                    <!-- Γεμίζει δυναμικά από JS -->
+                </div>
+            </div>
+
+            <!-- Δεξί πλαίσιο: Εξαντλημένες αγγελίες -->
+            <div class="consumer-panel consumer-panel--glass">
+                <div class="consumer-panel-header consumer-panel-header--exhausted">
+                    <span class="consumer-panel-dot consumer-panel-dot--exhausted"></span>
+                    <h3>⚫ Εξαντλημένες Αγγελίες</h3>
+                    <span class="consumer-count-badge" id="exhaustedCount">0</span>
+                </div>
+                <div class="consumer-panel-body" id="exhaustedListingsContainer">
+                    <!-- Γεμίζει δυναμικά από JS -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Κάτω: Χάρτης -->
+        <div class="consumer-panel consumer-panel--full consumer-panel--glass">
+            <div class="consumer-panel-header consumer-panel-header--map">
+                <span>📍</span>
+                <h3>Προσφερόμενες Μερίδες στον Χάρτη</h3>
+                <span class="map-hint-text">📌 Κλικ σε marker για λεπτομέρειες</span>
+            </div>
+            <div id="studentMap" style="height:420px;width:100%;border-radius:0 0 20px 20px;"></div>
+        </div>
+
+    </div>
+</div>
+
+            <div id="page-myorders" class="app-page" style="display: none;">
+                <div class="orders-page-layout">
+                    <div class="orders-sub-group active-group">
+                        <div class="orders-group-title"> ΕΝΕΡΓΕΣ ΠΑΡΑΓΓΕΛΙΕΣ</div>
+                        <div id="activeOrders"></div>
+                    </div>
+                    <div class="orders-sub-group completed-group">
+                        <div class="orders-group-title"> ΟΛΟΚΛΗΡΩΜΕΝΕΣ ΠΑΡΑΓΓΕΛΙΕΣ</div>
+                        <div id="completedOrders"></div>
+                    </div>
+                </div>
+            </div>
+
+                        <div id="page-cook" class="app-page" style="display: none;">
+
+                <div class="main-container">
+                    
+                    <div class="panel form-panel">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Δημιουργία / Επεξεργασία<br>Αγγελίας</h2>
+                        </div>
+
+                        <form onsubmit="event.preventDefault();">
+                            <div class="form-group">
+                                <label class="label">Τίτλος <span class="required-star">*</span></label>
+                                <input type="text" class="input" placeholder="π.χ. Μακαρόνια με κιμά" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="label">Φωτογραφία (προαιρετικά)</label>
+                                <div class="upload-box">
+                                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="17 8 12 3 7 8" />
+                                        <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
+                                    <div class="upload-title">Μεταφόρτωση φωτογραφίας</div>
+                                    <div class="upload-text">Κάνε drag & drop ή πάτησε για επιλογή</div>
+                                    <div class="upload-hint">PNG, JPG, GIF (max 5MB)</div>
+                                </div>
+                            </div>
+
+                            <div class="row-2">
+                                <div class="form-group">
+                                    <label class="label">Τοποθεσία <span class="required-star">*</span></label>
+                                    <input type="text" class="input" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="label">Ποσότητα (μερίδες) <span class="required-star">*</span></label>
+                                    <div class="counter-container">
+                                        <span class="counter-value">1</span>
+                                        <div class="counter-btn-group">
+                                            <button type="button" class="counter-btn">−</button>
+                                            <button type="button" class="counter-btn">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="label">Ώρα παραλαβής <span class="required-star">*</span></label>
+                                <div class="time-container">
+                                    <svg class="time-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                    <input type="time" class="input input-with-icon" min="00:00" max="23:59" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="label">Αλλεργιογόνα</label>
+                                <div class="allergens-grid">
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="gluten"> Γλουτένη</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="milk"> Γάλα</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="eggs"> Αυγά</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="fish"> Ψάρι</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="peanuts"> Φιστίκια</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="soybeans"> Σόγια</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="tree-nuts"> Ξηροί Καρποί</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="sesame"> Σουσάμι</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="celery"> Σέλινο</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="mustard"> Μουστάρδα</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="sulfites"> Θειώδη</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="lupin"> Λούπινο</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="molluscs"> Μαλάκια</label>
+                                    <label class="allergen-item"><input type="checkbox" name="allergens" value="crustaceans"> Οστρακοειδή</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="label">Σημειώσεις (προαιρετικά)</label>
+                                <textarea class="input" placeholder="..."></textarea>
+                            </div>
+
+                            <div class="action-buttons">
+                                <button type="submit" class="btn btn-save">Αποθήκευση</button>
+                                <button type="reset" class="btn btn-clear">Καθαρισμός</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="panel listing-panel">
+                        <div class="listing-header-row">
+                            <h2 class="panel-title">Διαχείριση Αγγελιών</h2>
+                            <div class="header-right">
+                                <span class="crud-badge">CRUD</span>
+                                <div class="counter-text"><strong id="listingsCount">0</strong> καταχωρήσεις</div>
+                            </div>
+                        </div>
+                        <div id="listingsContainer"></div>
+                    </div>
+
+                    <div class="requests-panel">
+                        <div class="requests-header">
+                            <h2 class="panel-title">Αιτήματα Αγγελιών</h2>
+                            <div class="requests-badge" id="requestsBadgeCount">0</div>
+                        </div>
+                        <div class="requests-list" id="requestsListContainer"></div>
+                        <a href="#" class="view-all-link" id="viewAllRequestsLink" style="display:none;">Δες όλα τα αιτήματα →</a>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div id="page-bonus" class="app-page" style="display: none;">
+                <div class="bonus-container">
+                    <div class="points-display" id="loyaltyPoints">0 πόντοι</div>
+                    <div class="card-number-text">071456939 PERSONALIZED NOTE</div>
+
+                    <div class="bonus-card">
+                        <img src="mascot.png" alt="Bonus Logo" class="card-mascot">
+                        <div class="card-inner">
+                            <div class="card-header">
+                                <div class="brand-left">
+                                    <div class="logo-icon"></div>
+                                    <div class="logo-text">UniBite</div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="card-holder-info">
+                                    <div class="card-holder-name" id="bonusCardName">ΧΡΗΣΤΟΣ ΚΟΛΙΑΣ</div>
+                                    <div class="card-digits">•••• •••• 6939</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="loyalty-history">
+                        <h2>Ιστορικό Συναλλαγών</h2>
+                        <div class="transaction-list" id="transactionList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== ΣΥΧΝΕΣ ΕΡΩΤΗΣΕΙΣ ========== -->
+            <div id="page-faq" class="app-page" style="display: none;">
+                <div class="faq-layout-container">
+                    <div class="faq-questions-column">
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                                <span>1. Πώς μπορώ να εγγραφώ στην πλατφόρμα;</span>
+                                <span class="faq-arrow">▼</span>
+                            </div>
+                            <div class="faq-answer">Η εγγραφή γίνεται δωρεάν. Πατήστε Σύνδεση και συμπληρώστε τα στοιχεία σας.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                                <span>2. Ποιες περιοχές καλύπτετε;</span>
+                                <span class="faq-arrow">▼</span>
+                            </div>
+                            <div class="faq-answer">Προς το παρόν καλύπτουμε μόνο την περιοχή της Πάτρας.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                                <span>3. Πώς μπορώ να πάρω πόντους;</span>
+                                <span class="faq-arrow">▼</span>
+                            </div>
+                            <div class="faq-answer">Οι νέοι χρήστες ξεκινούν με 5 πόντους. Κερδίζετε πόντους προσφέροντας φαγητό. Κάθε μερίδα με βαθμολογία 3/5+ δίνει 2 πόντους.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                                <span>4. Μπορώ να αξιολογήσω ένα γεύμα;</span>
+                                <span class="faq-arrow">▼</span>
+                            </div>
+                            <div class="faq-answer">Ναι! Μετά την παραλαβή μπορείτε να αφήσετε βαθμολογία 1-5 αστέρων. Αν δεν αξιολογήσετε εντός 48 ωρών, χάνετε 1 πόντο.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                                <span>5. Μπορώ να δω τις αγγελίες σε χάρτη;</span>
+                                <span class="faq-arrow">▼</span>
+                            </div>
+                            <div class="faq-answer">Ναι! Στην ενότητα "Όλες οι Αγγελίες" εμφανίζεται χάρτης με τα σημεία παραλαβής.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                                <span>6. Τι γίνεται αν δεσμεύσω μερίδα και δεν την παραλάβω;</span>
+                                <span class="faq-arrow">▼</span>
+                            </div>
+                            <div class="faq-answer">Ο Μάγειρας το επισημαίνει και χάνετε 1 πόντο.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                                <span>7. Πόσο καιρό παραμένει ενεργή μια αγγελία;</span>
+                                <span class="faq-arrow">▼</span>
+                            </div>
+                            <div class="faq-answer">Κάθε αγγελία είναι ενεργή για 48 ώρες. Μετά διαγράφεται αυτόματα.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="this.parentElement.classList.toggle('active')">
+                                <span>8. Πώς μπορώ να γίνω Top Donor;</span>
+                                <span class="faq-arrow">▼</span>
+                            </div>
+                            <div class="faq-answer">Προσφέρετε όσο περισσότερες μερίδες μπορείτε! Ο Admin βλέπει τον Top Donor στο Leaderboard.</div>
+                        </div>
+                    </div>
+                    <div class="faq-image-column">
+                        <img src="images/faq.png" alt="FAQ Illustration" class="faq-side-image">
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-settings" class="app-page" style="display: none;">
+                <div class="settings-modern-container">
+                    <p class="settings-intro">Διαμορφώστε τις προσωπικές προτιμήσεις της εφαρμογής UniBite για μια καλύτερη εμπειρία πλοήγησης.</p>
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <span class="settings-icon"></span>
+                            <h3>Προτιμήσεις Εφαρμογής</h3>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-info">
+                                <span class="settings-label">Γλώσσα Διεπαφής (Interface Language)</span>
+                                <span class="settings-sublabel">Επιλέξτε τη βασική γλώσσα εμφάνισης του ακαδημαϊκού portal.</span>
+                            </div>
+                            <div class="settings-action">
+                                <select class="settings-select" onchange="setLanguage(this.value)">
+                                    <option value="el" selected>🇬🇷 Ελληνικά (Greek)</option>
+                                    <option value="en">🇬🇧 English (Αγγλικά)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-info">
+                                <span class="settings-label">Σκοτεινή Λειτουργία (Dark Mode)</span>
+                                <span class="settings-sublabel">Προσαρμογή των χρωμάτων για ξεκούραστη ανάγνωση το βράδυ.</span>
+                            </div>
+                            <div class="settings-action">
+                                <label class="settings-switch">
+                                    <input id="darkModeToggle" type="checkbox" onchange="toggleDarkMode()">
+                                    <span class="settings-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <span class="settings-icon"></span>
+                            <h3>Ειδοποιήσεις & Ασφάλεια</h3>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-info">
+                                <span class="settings-label">Push Ειδοποιήσεις για Νέες Αγγελίες</span>
+                                <span class="settings-sublabel">Λάβετε ειδοποίηση μόλις ένας φοιτητής ανεβάσει μερίδα φαγητού στο τμήμα σας.</span>
+                            </div>
+                            <div class="settings-action">
+                                <label class="settings-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="settings-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-info">
+                                <span class="settings-label">Υπενθυμίσεις Αξιολόγησης Γεύματος</span>
+                                <span class="settings-sublabel">Ειδοποίηση για βαθμολόγηση εντός 48 ωρών, προς αποφυγή ποινής πόντων.</span>
+                            </div>
+                            <div class="settings-action">
+                                <label class="settings-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="settings-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-info">
+                                <span class="settings-label">Ειδοποιήσεις Email</span>
+                                <span class="settings-sublabel">Λήψη εβδομαδιαίων στατιστικών και ανακοινώσεων της κοινότητας UniBite.</span>
+                            </div>
+                            <div class="settings-action">
+                                <label class="settings-switch">
+                                    <input type="checkbox">
+                                    <span class="settings-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card card-info-version">
+                        <div class="settings-row no-border">
+                            <div class="settings-info">
+                                <span class="settings-label">UniBite Academic Portal — Έκδοση v2.4</span>
+                                <span class="settings-sublabel">Αναπτύχθηκε στα πλαίσια της εργασίας εξαμήνου. Όλα τα δικαιώματα διατηρούνται © 2026.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-account" class="app-page" style="display: none;">
+                <div class="academic-profile-wrapper">
+                    <div class="academic-grid-top">
+                        <div class="academic-card card-avatar-accent">
+                            <div class="academic-card-avatar-zone">
+                                <div class="academic-avatar-wrapper">
+                                    <div class="academic-avatar-letter" id="profileAvatarLetter">U</div>
+                                    <div class="academic-verified-badge">✓</div>
+                                </div>
+                                <h3 class="academic-profile-name" id="profileNameDisplay">Χρήστης</h3>
+                                <p class="academic-profile-sub" id="profileRoleSub">Φοιτητής UniBite</p>
+                                <span class="academic-role-badge">Verified Academic Member</span>
+                                <div class="academic-user-stats">
+                                    <div class="stat-box">
+                                        <span class="stat-number" id="profilePoints">5</span>
+                                        <span class="stat-label">Πόντοι</span>
+                                    </div>
+                                    <div class="stat-box">
+                                        <span class="stat-number">12</span>
+                                        <span class="stat-label">Προσφορές</span>
+                                    </div>
+                                    <div class="stat-box">
+                                        <span class="stat-number">8</span>
+                                        <span class="stat-label">Λήψεις</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="academic-card card-info-accent">
+                            <h3 class="academic-card-title">Ακαδημαϊκά Στοιχεία</h3>
+                            <table class="academic-table">
+                                <tr>
+                                    <td class="academic-label">Όνομα Χρήστη</td>
+                                    <td class="academic-value" id="profileUsername">xristos</td>
+                                </tr>
+                                <tr>
+                                    <td class="academic-label">Ιδρυματικό E-mail</td>
+                                    <td class="academic-value" id="profileEmail">up1112136@upnet.gr</td>
+                                </tr>
+                                <tr>
+                                    <td class="academic-label">Αριθμός Μητρώου</td>
+                                    <td class="academic-value" id="profileAM">1112136</td>
+                                </tr>
+                                <tr>
+                                    <td class="academic-label">Τμήμα / Σχολή</td>
+                                    <td class="academic-value">Μηχανικών Ηλεκτρονικών Υπολογιστών & Πληροφορικής</td>
+                                </tr>
+                                <tr>
+                                    <td class="academic-label">Ημερομηνία Εγγραφής</td>
+                                    <td class="academic-value">05/06/2026</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="academic-card-full">
+                        <h3 style="color: #dc2626; font-size: 18px; margin-bottom: 10px;">Επικίνδυνη Ζώνη</h3>
+                        <p class="delete-warning-text">Για να διαγραφείτε οριστικά από την πλατφόρμα UniBite, παρακαλούμε πατήστε το παρακάτω κουμπί. Η ενέργεια αυτή είναι μη αναστρέψιμη.</p>
+                        <button class="academic-btn-delete" onclick="confirmDeleteAccount()">Διαγραφή λογαριασμού</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="customAlertModal" class="modal-backup">
+        <div class="modal-content-alert">
+            <div id="modalAlertIcon" class="modal-alert-icon">💡</div>
+            <h3 id="modalAlertTitle" class="modal-alert-title">Ενημέρωση</h3>
+            <p id="modalAlertMessage" class="modal-alert-message">Μήνυμα...</p>
+            <button class="modal-alert-btn" onclick="closeCustomAlert()">Έγινε</button>
+        </div>
+    </div>
+
+    <script src="window.js"></script>
+    <script src="s.js"></script>
+</body>
+</html>
